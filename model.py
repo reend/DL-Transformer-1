@@ -33,3 +33,6 @@ class PositionalEncoding(nn.Module):
         pe = pe.unsqueeze(0) # (1, seq_len, d_model)
 
         self.register_buffer('pe', pe) # register pe as a buffer to be used in forward pass
+
+    def forward(self, x):  
+        x = x + (self.pe[:, :x.shape(1), :]).requires_grad_(False) # (batch_size, seq_len, d_model)
