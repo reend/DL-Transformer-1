@@ -21,19 +21,32 @@ class PositionalEncoding(nn.Module):
         self.seq_len = seq_len
         self.dropout = nn.Dropout(dropout)
 
-        # positional encoding matrix (seq_len, d_model)
+        # matrix of shape (seq_len, d_model) 
         pe = torch.zeros(seq_len, d_model) 
-        # vector (seq_len, 1)
+        # vector of shape (seq_len, 1) 
         position = torch.arange(0, seq_len, dtype=torch.float).unsqueeze(1) 
         # formula for positional encoding
         div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)) 
         pe[:, 0::2] = torch.sin(position * div_term) # even indices
         pe[:, 1::2] = torch.cos(position * div_term) # odd indices
 
-        pe = pe.unsqueeze(0) # (1, seq_len, d_model)
+        pe = pe.unsqueeze(0)
 
         self.register_buffer('pe', pe) # register pe as a buffer to be used in forward pass
 
     def forward(self, x):  
         x = x + (self.pe[:, :x.shape(1), :]).requires_grad_(False) # (batch_size, seq_len, d_model)
         return self.dropout(x)
+    
+class LayerNormalization(nn.Module):
+
+    def __init__(self, eps:float = 10**-6) -> None:
+        super().__init__()
+        self.eps = eps
+        self.alpha = nn.Parameter(torch.ones(1)) # Mul
+        self.bias = nn.Parameter(torch.zeros(1)) # Add
+
+    def forward(self, x):
+        mean = x.mean(dim = -1, keepdim=True)
+        std = x.std(dim = -1, keepdim=True)
+        return self.alpha * (x - mean) / (std + self.eps) + self.bias
